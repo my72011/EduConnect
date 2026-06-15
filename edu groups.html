@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduConnect | المجموعات التفاعلية</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f0f4f8; --text-main: #1a202c; --text-muted: #4a5568;
+            --accent: #006684; --nav-bg: rgba(255, 255, 255, 0.98);
+            --card-bg: rgba(255, 255, 255, 0.95); --border-color: rgba(0, 0, 0, 0.08);
+            --shadow: 0 12px 40px rgba(0, 0, 0, 0.05);
+        }
+        body.dark-mode {
+            --bg-color: #030712; --text-main: #f8fafc; --text-muted: #94a3b8;
+            --accent: #c5a367; --nav-bg: rgba(3, 7, 18, 0.98);
+            --card-bg: rgba(30, 41, 59, 0.95); --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: background 0.3s, color 0.3s; }
+        body { background-color: var(--bg-color); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* Navigation */
+        nav {
+            height: 75px; display: flex; justify-content: space-between; align-items: center;
+            padding: 0 5%; background: var(--nav-bg); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color); z-index: 1000;
+        }
+        .logo img { height: 45px; object-fit: contain; }
+        .nav-links { display: flex; gap: 8px; }
+        .nav-link-btn {
+            background: transparent; border: 1px solid transparent; padding: 10px 15px; 
+            border-radius: 14px; color: var(--text-main); text-decoration: none; 
+            font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;
+        }
+        .nav-link-btn.active { background: rgba(0, 102, 132, 0.1); color: var(--accent); border-color: var(--border-color); }
+        .nav-link-btn i { font-size: 1.1rem; }
+
+        /* Main Layout */
+        .main-layout { display: flex; flex: 1; overflow: hidden; }
+
+        /* Sidebar: Groups List */
+        .groups-sidebar {
+            width: 380px; background: var(--card-bg); border-left: 1px solid var(--border-color);
+            display: flex; flex-direction: column; padding: 20px; overflow-y: auto;
+        }
+        .sidebar-header { margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-header h2 { font-weight: 900; font-size: 1.5rem; }
+
+        .group-item {
+            padding: 18px; border-radius: 20px; cursor: pointer; margin-bottom: 12px;
+            border: 1px solid transparent; background: rgba(0,0,0,0.02); display: flex; align-items: center; gap: 15px;
+        }
+        .group-item:hover, .group-item.active { background: rgba(0, 102, 132, 0.08); border-color: var(--accent); transform: scale(1.02); }
+        .group-item .icon-box { width: 50px; height: 50px; border-radius: 15px; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+
+        /* Chat/Files Container */
+        .chat-view { flex: 1; display: flex; flex-direction: column; background: var(--bg-color); position: relative; }
+        
+        .chat-header { 
+            padding: 15px 30px; background: var(--nav-bg); border-bottom: 1px solid var(--border-color);
+            display: none; align-items: center; justify-content: space-between;
+        }
+        .chat-header h3 { font-weight: 800; color: var(--accent); }
+
+        .messages-area { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        
+        .msg-bubble { max-width: 75%; padding: 15px 20px; border-radius: 22px; position: relative; font-weight: 600; box-shadow: var(--shadow); }
+        .msg-bubble.sent { align-self: flex-start; background: var(--accent); color: white; border-bottom-right-radius: 5px; }
+        .msg-bubble.received { align-self: flex-end; background: var(--card-bg); border: 1px solid var(--border-color); border-bottom-left-radius: 5px; }
+        .msg-info { font-size: 0.7rem; margin-bottom: 5px; opacity: 0.8; display: block; }
+
+        /* Input Bar */
+        .input-bar {
+            padding: 20px 30px; background: var(--nav-bg); border-top: 1px solid var(--border-color);
+            display: none; gap: 15px; align-items: center;
+        }
+        .input-bar input { flex: 1; padding: 15px 20px; border-radius: 18px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-main); font-weight: 600; outline: none; }
+        
+        .action-btn { width: 50px; height: 50px; border-radius: 15px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .send-btn { background: var(--accent); color: white; }
+        .attach-btn { background: rgba(0,0,0,0.05); color: var(--text-main); }
+
+        /* Empty State */
+        .empty-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0.6; }
+        .empty-view i { font-size: 5rem; color: var(--accent); margin-bottom: 20px; }
+
+        @media (max-width: 900px) {
+            .groups-sidebar { width: 100%; position: absolute; left: 0; top: 0; height: 100%; z-index: 10; }
+            .groups-sidebar.hidden { display: none; }
+            .nav-link-btn span { display: none; }
+        }
+    </style>
+</head>
+<body class="dark-mode"> <!-- شغالة Dark Mode افتراضي زي باقي بروجكتاتك -->
+
+    <nav>
+        <div class="logo"><img id="main-logo" src="dark.png" alt="Logo"></div>
+        <div class="nav-links">
+            <a href="mm.html" class="nav-link-btn"><i class="fas fa-home"></i> <span>الرئيسية</span></a>
+            <a href="search.html" class="nav-link-btn"><i class="fas fa-search"></i> <span>البحث</span></a>
+            <a href="notifications.html" class="nav-link-btn"><i class="fas fa-bell"></i> <span>الإشعارات</span></a>
+            <a href="groups.html" class="nav-link-btn active"><i class="fas fa-users"></i> <span>المجموعات</span></a>
+            <a href="settings.html" class="nav-link-btn"><i class="fas fa-cog"></i> <span>الإعدادات</span></a>
+        </div>
+    </nav>
+
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <aside class="groups-sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>مجموعاتي</h2>
+                <button id="addBtn" style="display:none; color:var(--accent); background:none; border:none; cursor:pointer;"><i class="fas fa-plus-circle fa-2x"></i></button>
+            </div>
+            <div id="groupsList">
+                <!-- Loading Animation -->
+                <p style="text-align: center; margin-top: 20px;"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</p>
+            </div>
+        </aside>
+
+        <!-- Chat View -->
+        <main class="chat-view">
+            <div class="empty-view" id="emptyView">
+                <i class="fas fa-layer-group"></i>
+                <h2>أهلاً بك في EduConnect</h2>
+                <p>اختر مجموعة من القائمة الجانبية لمتابعة الدروس والملفات</p>
+            </div>
+
+            <div class="chat-header" id="chatHeader">
+                <div>
+                    <h3 id="groupTitle">اسم المجموعة</h3>
+                    <small id="teacherSub" style="color: var(--text-muted);"></small>
+                </div>
+                <button class="nav-link-btn" onclick="toggleSidebar()" id="backBtn" style="display:none;"><i class="fas fa-chevron-right"></i></button>
+            </div>
+
+            <div class="messages-area" id="msgArea"></div>
+
+            <div class="input-bar" id="inputBar">
+                <input type="file" id="fileInput" hidden onchange="handleFileUpload()">
+                <button class="action-btn attach-btn" onclick="document.getElementById('fileInput').click()"><i class="fas fa-paperclip"></i></button>
+                <input type="text" id="msgText" placeholder="اكتب رسالتك للمجموعة...">
+                <button class="action-btn send-btn" onclick="handleSend()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // دمج منطق الـ Appwrite والـ UI
+        const { Client, Account, Databases, ID, Query, Storage } = Appwrite;
+        const client = new Client().setEndpoint('https://cloud.appwrite.io/v1').setProject('67616616002570be0b26');
+        const account = new Account(client);
+        const databases = new Databases(client);
+        const storage = new Storage(client);
+
+        const dbId = "YOUR_DB_ID";
+        const groupsId = "GROUPS_COLL_ID";
+        const msgId = "MESSAGES_COLL_ID";
+
+        let user, currentGroup;
+
+        async function init() {
+            try {
+                user = await account.get();
+                if(user.labels.includes('teacher')) document.getElementById('addBtn').style.display = 'block';
+                loadUserGroups();
+            } catch(e) { window.location.href = 'educonnect login.html'; }
+        }
+
+        async function loadUserGroups() {
+            const container = document.getElementById('groupsList');
+            try {
+                // هنجيب المجموعات اللي المدرس عاملها أو الطالب مقبول فيها
+                const res = await databases.listDocuments(dbId, groupsId); 
+                container.innerHTML = res.documents.map(g => `
+                    <div class="group-item" onclick="openGroup('${g.$id}', '${g.name}', '${g.teacherName}')">
+                        <div class="icon-box"><i class="fas fa-graduation-cap"></i></div>
+                        <div>
+                            <div style="font-weight:900">${g.name}</div>
+                            <small style="opacity:0.7">${g.subject}</small>
+                        </div>
+                    </div>
+                `).join('');
+                
+                gsap.from(".group-item", { opacity: 0, x: -20, stagger: 0.1 });
+            } catch(e) { container.innerHTML = "خطأ في تحميل المجموعات"; }
+        }
+
+        async function openGroup(id, name, teacher) {
+            currentGroup = id;
+            document.getElementById('emptyView').style.display = 'none';
+            document.getElementById('chatHeader').style.display = 'flex';
+            document.getElementById('inputBar').style.display = 'flex';
+            document.getElementById('groupTitle').innerText = name;
+            document.getElementById('teacherSub').innerText = `المدرس: ${teacher}`;
+            
+            if(window.innerWidth < 900) toggleSidebar();
+            loadMessages();
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('hidden');
+            document.getElementById('backBtn').style.display = 
+                document.getElementById('sidebar').classList.contains('hidden') ? 'block' : 'none';
+        }
+
+        // Logic التحميل والإرسال بـ Appwrite بيتحط هنا زي ما كملنا في الكود اللي فات...
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduConnect | Premium Settings</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Appwrite & GSAP -->
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f0f4f8; 
+            --text-main: #1a202c; 
+            --text-muted: #4a5568; 
+            --accent: #006684; 
+            --nav-bg: rgba(255, 255, 255, 0.98); 
+            --card-bg: rgba(255, 255, 255, 0.95); 
+            --border-color: rgba(0, 0, 0, 0.08);
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+        }
+        body.dark-mode {
+            --bg-color: #030712; 
+            --text-main: #f8fafc; 
+            --text-muted: #94a3b8;
+            --accent: #c5a367; 
+            --nav-bg: rgba(3, 7, 18, 0.98);
+            --card-bg: rgba(30, 41, 59, 0.95); 
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: background 0.3s, color 0.3s, transform 0.2s; }
+        
+        body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+        
+        #network-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: 0.4; }
+
+        /* Navigation */
+        nav {
+            position: fixed; top: 0; width: 100%; height: 75px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 5%; background: var(--nav-bg); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color); z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+        
+        .logo { display: flex; align-items: center; }
+        .logo img { 
+            height: 45px; 
+            max-width: 150px; 
+            object-fit: contain; 
+        }
+
+        .nav-links { display: flex; gap: 8px; }
+        .nav-link-btn {
+            background: transparent; border: 1px solid transparent;
+            padding: 10px 15px; border-radius: 14px; color: var(--text-main);
+            text-decoration: none; font-weight: 700; font-size: 0.9rem;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .nav-link-btn:hover, .nav-link-btn.active { 
+            background: var(--card-bg); 
+            border-color: var(--border-color); 
+            color: var(--accent); 
+        }
+
+        /* Layout Wrapper */
+        .settings-wrapper {
+            max-width: 1100px; 
+            margin: 0 auto; 
+            padding: 120px 20px 60px; /* مسافة علوية لمنع التداخل مع الناف بار */
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 30px;
+        }
+
+        .premium-card {
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 24px;
+            padding: 30px; 
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header { 
+            margin-bottom: 30px; 
+            border-bottom: 1px solid var(--border-color); 
+            padding-bottom: 15px; 
+        }
+        .card-header h2 { 
+            font-size: 1.4rem; 
+            font-weight: 900; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+        }
+        .card-header h2 i { color: var(--accent); }
+
+        .input-group { margin-bottom: 25px; }
+        .input-group label { 
+            display: block; 
+            margin-bottom: 10px; 
+            font-weight: 700; 
+            font-size: 0.95rem; 
+            color: var(--text-muted); 
+        }
+        
+        input {
+            width: 100%; padding: 15px 20px; border-radius: 16px; 
+            border: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.02); color: var(--text-main); 
+            outline: none; font-weight: 600;
+        }
+        body.dark-mode input { background: rgba(255, 255, 255, 0.05); }
+        input:focus { border-color: var(--accent); background: rgba(0, 102, 132, 0.05); }
+
+        .btn-flex { display: flex; gap: 12px; margin-top: 10px; }
+        
+        .main-btn {
+            flex: 1; padding: 14px; border-radius: 16px; border: none;
+            background: var(--accent); color: white; font-weight: 800;
+            cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .main-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        
+        .logout-btn { 
+            background: rgba(231, 76, 60, 0.1); 
+            color: #e74c3c; 
+            border: 1px solid rgba(231, 76, 60, 0.2); 
+            width: 100%; 
+            margin-top: 40px;
+            padding: 16px;
+        }
+        .logout-btn:hover { background: #e74c3c; color: white; }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .settings-wrapper { grid-template-columns: 1fr; padding-top: 100px; }
+            .nav-link-btn span { display: none; }
+            nav { padding: 0 15px; }
+            .premium-card { padding: 25px; }
+        }
+
+        body.en { direction: ltr; }
+    </style>
+</head>
+<body>
+
+    <canvas id="network-canvas"></canvas>
+
+    <nav>
+        <div class="logo">
+            <!-- اللوجو هيتغير تلقائياً مع الثيم -->
+            <img id="main-logo" src="sunlight.png" alt="EduConnect Logo">
+        </div>
+        <div class="nav-links">
+            <a href="edu-main.html" class="nav-link-btn"><i class="fas fa-home"></i> <span>الرئيسية</span></a>
+            <a href="edu search.html" class="nav-link-btn"><i class="fas fa-search"></i> <span>البحث</span></a>
+            <a href="notifications.html" class="nav-link-btn"><i class="fas fa-bell"></i> <span>الإشعارات</span></a>
+            <a href="groups.html" class="nav-link-btn"><i class="fas fa-users"></i> <span>المجموعات</span></a>
+            <a href="settings.html" class="nav-link-btn active"><i class="fas fa-cog"></i> <span>الإعدادات</span></a>
+        </div>
+    </nav>
+
+    <div class="settings-wrapper">
+        <!-- كارت الأمان -->
+        <div class="premium-card" id="securityCard">
+            <div class="card-header">
+                <h2 data-ar="الأمان والحساب" data-en="Security & Account"><i class="fas fa-user-shield"></i> الأمان والحساب</h2>
+            </div>
+            <div class="input-group">
+                <label data-ar="كلمة المرور القديمة" data-en="Current Password">كلمة المرور القديمة</label>
+                <input type="password" id="oldPass" placeholder="••••••••">
+            </div>
+            <div class="input-group">
+                <label data-ar="كلمة المرور الجديدة" data-en="New Password">كلمة المرور الجديدة</label>
+                <input type="password" id="newPass" placeholder="••••••••">
+            </div>
+            <button class="main-btn" onclick="updatePassword()">
+                <i class="fas fa-sync-alt"></i> <span data-ar="تحديث كلمة المرور" data-en="Update Password">تحديث كلمة المرور</span>
+            </button>
+        </div>
+
+        <!-- كارت المظهر واللغة -->
+        <div class="premium-card" id="displayCard">
+            <div class="card-header">
+                <h2 data-ar="التخصيص واللغة" data-en="Customization & Language"><i class="fas fa-magic"></i> التخصيص واللغة</h2>
+            </div>
+            
+            <div class="input-group">
+                <label data-ar="مظهر التطبيق (Theme)" data-en="Global Theme">مظهر التطبيق (Theme)</label>
+                <div class="btn-flex">
+                    <button class="main-btn" style="background: #ffffff; color: #006684; border: 1px solid #006684;" onclick="setTheme('light')">
+                        <i class="fas fa-sun"></i> Sunlight
+                    </button>
+                    <button class="main-btn" style="background: #111827; border: 1px solid #374151;" onclick="setTheme('dark')">
+                        <i class="fas fa-moon"></i> Dark Mode
+                    </button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label data-ar="لغة الواجهة" data-en="App Language">لغة الواجهة</label>
+                <div class="btn-flex">
+                    <button class="main-btn" onclick="setLang('ar')">العربية</button>
+                    <button class="main-btn" onclick="setLang('en')">English</button>
+                </div>
+            </div>
+
+            <button class="main-btn logout-btn" onclick="logout()">
+                <i class="fas fa-power-off"></i> <span data-ar="تسجيل الخروج" data-en="Log Out">تسجيل الخروج</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Appwrite Configuration ---
+        const { Client, Account } = Appwrite;
+        const client = new Client()
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('67616616002570be0b26');
+        const account = new Account(client);
+
+        // --- Core Functions ---
+        async function updatePassword() {
+            const oldP = document.getElementById('oldPass').value;
+            const newP = document.getElementById('newPass').value;
+            if(!oldP || !newP) return alert("من فضلك أدخل كلمات المرور");
+            try {
+                await account.updatePassword(newP, oldP);
+                alert("تم تحديث كلمة المرور بنجاح ✅");
+            } catch (err) { alert("خطأ: " + err.message); }
+        }
+
+        function setTheme(theme) {
+            if(theme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('main-logo').src = 'dark.png';
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.getElementById('main-logo').src = 'sunlight.png';
+            }
+            localStorage.setItem('theme', theme);
+        }
+
+        function setLang(lang) {
+            document.body.classList.toggle('en', lang === 'en');
+            localStorage.setItem('lang', lang);
+            document.querySelectorAll('[data-ar]').forEach(el => {
+                el.innerText = el.getAttribute(`data-${lang}`);
+            });
+        }
+
+        async function logout() {
+            try {
+                await account.deleteSession('current');
+                window.location.href = 'login.html';
+            } catch (e) { window.location.href = 'login.html'; }
+        }
+
+        // --- Startup & Canvas ---
+        window.onload = () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const savedLang = localStorage.getItem('lang') || 'ar';
+            setTheme(savedTheme);
+            setLang(savedLang);
+            
+            gsap.from(".premium-card", { opacity: 0, y: 30, duration: 0.8, stagger: 0.2, ease: "power2.out" });
+        };
+
+        const canvas = document.getElementById('network-canvas');
+        const ctx = canvas.getContext('2d');
+        let w, h, particles = [];
+        const resize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+        window.onresize = resize; resize();
+
+        class Particle {
+            constructor() { 
+                this.x = Math.random()*w; this.y = Math.random()*h; 
+                this.vx = (Math.random()-0.5)*0.4; this.vy = (Math.random()-0.5)*0.4; 
+            }
+            update() { 
+                this.x+=this.vx; this.y+=this.vy; 
+                if(this.x<0||this.x>w)this.vx*=-1; if(this.y<0||this.y>h)this.vy*=-1; 
+            }
+        }
+
+        for(let i=0; i<70; i++) particles.push(new Particle());
+
+        function animate() {
+            ctx.clearRect(0,0,w,h);
+            const style = getComputedStyle(document.body);
+            ctx.fillStyle = style.getPropertyValue('--accent');
+            ctx.strokeStyle = style.getPropertyValue('--accent');
+            
+            particles.forEach((p, i) => {
+                p.update();
+                ctx.globalAlpha = 0.2;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 1.2, 0, Math.PI*2); ctx.fill();
+                for(let j=i+1; j<particles.length; j++) {
+                    let d = Math.hypot(p.x-particles[j].x, p.y-particles[j].y);
+                    if(d<130) { 
+                        ctx.globalAlpha = 0.4 * (1 - (d/130)); 
+                        ctx.lineWidth = 0.6; 
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(particles[j].x, particles[j].y); ctx.stroke(); 
+                    }
+                }
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>

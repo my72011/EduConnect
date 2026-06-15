@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduConnect | Premium Experience</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;500;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- المتغيرات الأساسية --- */
+        :root {
+            --bg-color: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #006684;
+            --nav-glass: rgba(255, 255, 255, 0.7);
+            --card-glass: rgba(255, 255, 255, 0.4);
+            --border-glass: rgba(0, 0, 0, 0.05);
+            --canvas-dots: rgba(0, 102, 132, 0.2);
+            --canvas-lines: rgba(0, 102, 132, 0.1);
+        }
+
+        body.dark-mode {
+            --bg-color: #050b14;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #c5a367;
+            --nav-glass: rgba(5, 11, 20, 0.7);
+            --card-glass: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.05);
+            --canvas-dots: rgba(197, 163, 103, 0.3);
+            --canvas-lines: rgba(197, 163, 103, 0.15);
+        }
+
+        /* --- إعدادات عامة --- */
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            transition: background-color 0.8s ease;
+        }
+
+        ::selection { background: var(--accent); color: #fff; }
+
+        /* --- خلفية Canvas --- */
+        #network-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* --- شريط التنقل --- */
+        nav {
+            position: fixed; top: 0; width: 100%;
+            padding: 20px 5vw;
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--nav-glass);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--border-glass);
+            z-index: 100;
+        }
+
+        .logo img { height: 60px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+
+        .theme-btn {
+            background: transparent; border: none; cursor: pointer;
+            font-size: 1.5rem; color: var(--text-main);
+            transition: transform 0.3s ease;
+        }
+        .theme-btn:hover { transform: rotate(30deg) scale(1.1); }
+
+        /* --- القسم الرئيسي --- */
+        .hero {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            text-align: center;
+            padding: 120px 20px 50px;
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            line-height: 1.2;
+            margin-bottom: 20px;
+        }
+
+        /* حاوية الكلمات للأنيميشن */
+        .word-wrap {
+            display: inline-block;
+            overflow: hidden;
+            vertical-align: bottom;
+            padding-bottom: 10px; /* لحماية التشكيل وحروف زي الـ ي والقاف */
+        }
+
+        .word {
+            display: inline-block;
+            color: var(--text-main);
+            transform: translateY(100%); /* البداية للأنيميشن */
+        }
+
+        .highlight {
+            background: linear-gradient(45deg, var(--accent), #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-desc {
+            font-size: clamp(1.1rem, 2vw, 1.4rem);
+            color: var(--text-muted);
+            max-width: 700px;
+            margin-bottom: 50px;
+            line-height: 1.8;
+            opacity: 0;
+        }
+
+        /* --- الأزرار المغناطيسية --- */
+        .magnetic-wrap { display: inline-block; padding: 20px; cursor: pointer; }
+        
+        .btn {
+            position: relative;
+            padding: 18px 45px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            border-radius: 50px;
+            border: none;
+            background: var(--text-main);
+            color: var(--bg-color);
+            overflow: hidden;
+            display: flex; align-items: center; gap: 15px;
+            cursor: pointer;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .btn::before {
+            content: ''; position: absolute;
+            top: 100%; left: 0; width: 100%; height: 100%;
+            background: var(--accent);
+            transition: top 0.4s cubic-bezier(0.7, 0, 0.2, 1);
+            z-index: 0;
+            border-radius: 50% 50% 0 0;
+        }
+
+        .btn:hover::before { top: 0; border-radius: 0; }
+        .btn span, .btn i { position: relative; z-index: 1; transition: color 0.3s; }
+        .btn:hover span, .btn:hover i { color: #fff; }
+
+        /* --- بطاقات المميزات --- */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            width: 100%; max-width: 1200px;
+            margin-top: 50px;
+        }
+
+        .bento-card {
+            background: var(--card-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: 30px;
+            padding: 40px 30px;
+            text-align: right;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(50px);
+        }
+        
+        .bento-card i { font-size: 2.5rem; color: var(--accent); margin-bottom: 20px; display: block; }
+        .bento-card h3 { font-size: 1.5rem; margin-bottom: 10px; color: var(--text-main); }
+        .bento-card p { color: var(--text-muted); font-size: 1rem; }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="network-canvas"></canvas>
+
+    <nav>
+        <div class="logo">
+            <img id="main-logo" src="2.png" alt="EduConnect Logo">
+        </div>
+        <div class="nav-actions">
+            <button class="theme-btn" id="theme-toggle">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="hero">
+        <h1 class="hero-title">
+            <span class="word-wrap"><span class="word">مستقبل</span></span> 
+            <span class="word-wrap"><span class="word">التعليم</span></span> 
+            <br>
+            <span class="word-wrap"><span class="word highlight">الرقمي</span></span>
+        </h1>
+        
+        <p class="hero-desc">
+            بنينا EduConnect بأحدث التقنيات ليوفر بيئة متكاملة تجمع بين إدارة الفصول الافتراضية، ومتابعة الطلاب، وتحليل البيانات في لوحة تحكم واحدة.
+        </p>
+
+        <div class="magnetic-wrap">
+            <button class="btn magnetic-btn" onclick="window.location.href='educonnect(try1).html'">
+                <span>اكتشف المنصة</span>
+                <i class="fas fa-arrow-left"></i>
+            </button>
+        </div>
+
+        <div class="bento-grid">
+            <div class="bento-card">
+                <i class="fas fa-chalkboard-user"></i>
+                <h3>بوابة المعلمين</h3>
+                <p>إدارة كاملة للمحاضرات، رفع روابط الاجتماعات، ومتابعة تفاعل الطلاب لحظياً.</p>
+            </div>
+            <div class="bento-card">
+                <i class="fas fa-user-graduate"></i>
+                <h3>بوابة الطلاب</h3>
+                <p>وصول سريع للمناهج، تنبيهات بمواعيد المحاضرات، وتجربة مستخدم سلسة.</p>
+            </div>
+            <div class="bento-card">
+                <i class="fas fa-shield-halved"></i>
+                <h3>لوحة الإدارة</h3>
+                <p>تحكم كامل في النظام، إدارة الصلاحيات، وإحصائيات شاملة للأداء.</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <script>
+        // 1. Magnetic Button Effect (تأثير انجذاب الزرار للماوس)
+        const magneticBtns = document.querySelectorAll('.magnetic-wrap');
+        magneticBtns.forEach(wrap => {
+            const btn = wrap.querySelector('.magnetic-btn');
+            wrap.addEventListener('mousemove', (e) => {
+                const rect = wrap.getBoundingClientRect();
+                const h = rect.width / 2;
+                const v = rect.height / 2;
+                const x = e.clientX - rect.left - h;
+                const y = e.clientY - rect.top - v;
+                gsap.to(btn, { x: x * 0.4, y: y * 0.4, duration: 0.3, ease: "power2.out" });
+            });
+            wrap.addEventListener('mouseleave', () => {
+                gsap.to(btn, { x: 0, y: 0, duration: 0.7, ease: "elastic.out(1, 0.3)" });
+            });
+        });
+
+        // 2. Dark/Light Mode Switcher
+        const themeToggle = document.getElementById('theme-toggle');
+        const logo = document.getElementById('main-logo');
+        const icon = themeToggle.querySelector('i');
+        const body = document.body;
+
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            if(body.classList.contains('dark-mode')) {
+                logo.src = 'dark.png';
+                icon.className = 'fas fa-sun';
+            } else {
+                logo.src = 'sunlight.png';
+                icon.className = 'fas fa-moon';
+            }
+        });
+
+        // 3. GSAP Animations (العربي سليم ومترتب صح)
+        const tl = gsap.timeline();
+
+        // أنيميشن الكلمات (بتطلع من تحت لفوق بشكل سليم)
+        tl.to('.word', {
+            y: 0,
+            duration: 1,
+            stagger: 0.15,
+            ease: "power4.out",
+            delay: 0.2
+        })
+        .to('.hero-desc', {
+            opacity: 1,
+            y: -20,
+            duration: 0.8,
+            ease: "power2.out"
+        }, "-=0.5")
+        .from('.magnetic-wrap', {
+            scale: 0,
+            opacity: 0,
+            duration: 0.8,
+            ease: "back.out(1.5)"
+        }, "-=0.4")
+        .to('.bento-card', {
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            stagger: 0.2,
+            ease: "power3.out"
+        }, "-=0.2");
+
+        // 4. Interactive Network Canvas
+        const canvas = document.getElementById('network-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function getColors() {
+            const root = getComputedStyle(document.body);
+            return {
+                dot: root.getPropertyValue('--canvas-dots').trim(),
+                line: root.getPropertyValue('--canvas-lines').trim()
+            };
+        }
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = (Math.random() - 0.5) * 1.5;
+                this.radius = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if(this.x < 0 || this.x > width) this.vx *= -1;
+                if(this.y < 0 || this.y > height) this.vy *= -1;
+            }
+            draw(colors) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = colors.dot;
+                ctx.fill();
+            }
+        }
+
+        for(let i=0; i<60; i++) particles.push(new Particle());
+
+        let mouse = { x: null, y: null };
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.x; mouse.y = e.y;
+        });
+        window.addEventListener('mouseout', () => {
+            mouse.x = null; mouse.y = null;
+        });
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, width, height);
+            const colors = getColors();
+
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw(colors);
+                
+                for(let j = index; j < particles.length; j++) {
+                    const dx = particles[j].x - p.x;
+                    const dy = particles[j].y - p.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if(dist < 120) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = colors.line;
+                        ctx.lineWidth = 1;
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+
+                if(mouse.x != null) {
+                    const dxm = mouse.x - p.x;
+                    const dym = mouse.y - p.y;
+                    const distm = Math.sqrt(dxm*dxm + dym*dym);
+                    if(distm < 150) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = colors.line;
+                        ctx.lineWidth = 1.5;
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(mouse.x, mouse.y);
+                        ctx.stroke();
+                    }
+                }
+            });
+            requestAnimationFrame(animateCanvas);
+        }
+        animateCanvas();
+    </script>
+</body>
+</html>

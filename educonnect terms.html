@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduConnect | الشروط والأحكام</title>
+    
+    <!-- الخطوط والأيقونات والمكتبات -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;500;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f8fafc; 
+            --text-main: #0f172a; 
+            --text-muted: #64748b;
+            --accent: #006684; 
+            --nav-bg: rgba(255, 255, 255, 0.9);
+            --card-bg: rgba(255, 255, 255, 0.85); 
+            --border-glass: rgba(0, 0, 0, 0.1);
+            --canvas-color: rgba(0, 102, 132, 0.1);
+        }
+
+        /* المظهر المظلم المنسق مع مشروعك */
+        body.dark-mode {
+            --bg-color: #050b14; 
+            --text-main: #f8fafc; 
+            --text-muted: #94a3b8;
+            --accent: #c5a367; 
+            --nav-bg: rgba(5, 11, 20, 0.9);
+            --card-bg: rgba(15, 23, 42, 0.85); 
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --canvas-color: rgba(197, 163, 103, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); transition: 0.5s; overflow-x: hidden; min-height: 100vh; }
+        
+        /* خلفية الشبكة المتحركة الموحدة */
+        #network-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+        /* الهيدر الاحترافي */
+        nav { 
+            position: fixed; top: 0; width: 100%; padding: 12px 5vw; 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: var(--nav-bg); backdrop-filter: blur(15px); 
+            border-bottom: 1px solid var(--border-glass); z-index: 100; 
+        }
+        .logo img { height: 45px; transition: 0.3s; }
+        .nav-controls { display: flex; gap: 12px; }
+        .nav-btn { 
+            background: var(--accent); border: none; width: 42px; height: 42px; 
+            border-radius: 12px; color: white; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; transition: 0.3s; 
+        }
+        .nav-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        /* الحاوية الرئيسية */
+        .main-container { position: relative; z-index: 10; padding: 120px 20px 60px; max-width: 900px; margin: 0 auto; }
+        
+        .back-link { 
+            display: inline-flex; align-items: center; gap: 10px; 
+            color: var(--accent); text-decoration: none; font-weight: 800; 
+            margin-bottom: 30px; font-size: 0.95rem; transition: 0.3s;
+        }
+        .back-link:hover { transform: scale(1.05); }
+
+        /* الكارت الزجاجي */
+        .glass-card { 
+            background: var(--card-bg); backdrop-filter: blur(20px); 
+            border: 1px solid var(--border-glass); border-radius: 40px; 
+            padding: 50px; box-shadow: 0 25px 50px rgba(0,0,0,0.08);
+            animation: cardAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes cardAppear { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1 { font-size: 2.6rem; font-weight: 900; margin-bottom: 10px; color: var(--accent); }
+        .divider { width: 70px; height: 6px; background: var(--accent); border-radius: 10px; margin-bottom: 45px; }
+
+        .term-section { margin-bottom: 40px; }
+        .term-section h2 { font-size: 1.45rem; font-weight: 800; margin-bottom: 15px; display: flex; align-items: center; gap: 18px; }
+        .term-section h2 i { 
+            width: 38px; height: 38px; background: var(--accent); color: white; 
+            display: flex; align-items: center; justify-content: center; 
+            border-radius: 12px; font-size: 1rem; 
+        }
+        .term-section p { color: var(--text-muted); font-size: 1.08rem; line-height: 2; text-align: justify; }
+
+        /* دعم اللغة الإنجليزية */
+        body.en { direction: ltr; text-align: left; }
+        body.en .back-link i { transform: rotate(180deg); }
+
+        @media (max-width: 600px) {
+            .glass-card { padding: 30px 20px; border-radius: 30px; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body id="bodyTag"> <!-- يبدأ بدون dark-mode ليكون الفاتح هو الأساس -->
+
+    <canvas id="network-canvas"></canvas>
+
+    <nav>
+        <div class="logo">
+            <!-- اللوجو الفاتح هو الافتراضي -->
+            <img id="main-logo" src="sunlight.png" alt="EduConnect Logo">
+        </div>
+        <div class="nav-controls">
+            <button class="nav-btn" onclick="toggleLang()" title="ترجمة"><i class="fas fa-language"></i></button>
+            <button class="nav-btn" id="theme-toggle" title="تغيير المظهر"><i class="fas fa-moon"></i></button>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <a href="educonnect(try1).html" class="back-link">
+            <i class="fas fa-arrow-right" id="arrow-icon"></i> <span id="back-text">العودة للبداية</span>
+        </a>
+
+        <div class="glass-card">
+            <h1 id="main-title">الشروط والأحكام</h1>
+            <div class="divider"></div>
+
+            <div class="term-section">
+                <h2><i class="fas fa-lock"></i> <span id="t1-h">حماية الخصوصية</span></h2>
+                <p id="t1-p">في منصة EduConnect، نلتزم بحماية بياناتك الشخصية وتشفيرها. معلوماتك تُستخدم فقط لغرض تحسين تجربتك التعليمية وتخصيص المحتوى المناسب لك.</p>
+            </div>
+
+            <div class="term-section">
+                <h2><i class="fas fa-shield-halved"></i> <span id="t2-h">سياسة الاستخدام</span></h2>
+                <p id="t2-p">يُمنع استخدام الحساب الشخصي لأكثر من فرد. المنصة مخصصة لخدمة الطالب التعليمية، وأي نشاط يضر بالنظام قد يؤدي لتعليق الحساب مؤقتاً.</p>
+            </div>
+
+            <div class="term-section">
+                <h2><i class="fas fa-certificate"></i> <span id="t3-h">الملكية الفكرية</span></h2>
+                <p id="t3-p">جميع الحقوق محفوظة لمنصة EduConnect والمعلمين المشاركين. لا يُسمح بتداول المحتوى أو إعادة استخدامه خارج المنصة دون موافقة رسمية.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- منطق تبديل المظهر (Theme) ---
+        const themeBtn = document.getElementById('theme-toggle');
+        const logoImg = document.getElementById('main-logo');
+        
+        themeBtn.onclick = () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            
+            // تغيير الأيقونة واللوجو
+            themeBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            logoImg.src = isDark ? 'dark.png' : 'sunlight.png';
+        };
+
+        // --- منطق الترجمة الاحترافي ---
+        let lang = 'ar';
+        function toggleLang() {
+            lang = lang === 'ar' ? 'en' : 'ar';
+            document.body.classList.toggle('en');
+            document.body.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            
+            const content = {
+                ar: { title: "الشروط والأحكام", back: "العودة للبداية", t1h: "حماية الخصوصية", t1p: "في منصة EduConnect، نلتزم بحماية بياناتك الشخصية وتشفيرها...", t2h: "سياسة الاستخدام", t2p: "يُمنع استخدام الحساب الشخصي لأكثر من فرد...", t3h: "الملكية الفكرية", t3p: "جميع الحقوق محفوظة لمنصة EduConnect والمعلمين المشاركين..." },
+                en: { title: "Terms of Service", back: "Back to Start", t1h: "Data Protection", t1p: "At EduConnect, we are committed to protecting and encrypting your personal data for a better learning experience...", t2h: "Usage Policy", t2p: "Personal accounts are for individual use only. Activities harming the system may lead to suspension...", t3h: "Intellectual Property", t3p: "All rights reserved to EduConnect and participating teachers. Content cannot be shared without permission..." }
+            };
+
+            document.getElementById('main-title').innerText = content[lang].title;
+            document.getElementById('back-text').innerText = content[lang].back;
+            document.getElementById('t1-h').innerText = content[lang].t1h;
+            document.getElementById('t1-p').innerText = content[lang].t1p;
+            document.getElementById('t2-h').innerText = content[lang].t2h;
+            document.getElementById('t2-p').innerText = content[lang].t2p;
+            document.getElementById('t3-h').innerText = content[lang].t3h;
+            document.getElementById('t3-p').innerText = content[lang].t3p;
+        }
+
+        // --- كود الشبكة المتحركة (الموحد لمشروع EduConnect) ---
+        const canvas = document.getElementById('network-canvas');
+        const ctx = canvas.getContext('2d');
+        let w, h, particles = [];
+        const resize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+        window.onresize = resize; resize();
+
+        class Particle {
+            constructor() { 
+                this.x = Math.random() * w; 
+                this.y = Math.random() * h; 
+                this.vx = (Math.random() - 0.5) * 0.8; 
+                this.vy = (Math.random() - 0.5) * 0.8; 
+            }
+            update() { 
+                this.x += this.vx; this.y += this.vy; 
+                if(this.x < 0 || this.x > w) this.vx *= -1; 
+                if(this.y < 0 || this.y > h) this.vy *= -1; 
+            }
+        }
+
+        for(let i = 0; i < 45; i++) particles.push(new Particle());
+
+        function animate() {
+            ctx.clearRect(0, 0, w, h);
+            // جلب اللون من CSS لضمان التناسق مع الـ Theme
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--canvas-color');
+            particles.forEach((p, i) => {
+                p.update();
+                ctx.beginPath(); ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2); ctx.fill();
+                for(let j = i + 1; j < particles.length; j++) {
+                    let d = Math.hypot(p.x - particles[j].x, p.y - particles[j].y);
+                    if(d < 160) { 
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(particles[j].x, particles[j].y); 
+                        ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = 0.6; ctx.stroke(); 
+                    }
+                }
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>

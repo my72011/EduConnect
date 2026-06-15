@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduConnect | البحث عن مدرس</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
+
+    <style>
+        :root {
+            --bg-color: #030712; 
+            --text-main: #f8fafc; 
+            --accent: #c5a367; 
+            --nav-bg: rgba(3, 7, 18, 0.98);
+            --card-bg: rgba(30, 41, 59, 0.95); 
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; padding-top: 100px; }
+        
+        /* Nav Bar */
+        nav {
+            position: fixed; top: 0; width: 100%; height: 75px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 5%; background: var(--nav-bg); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color); z-index: 1000;
+        }
+        .logo img { height: 45px; }
+        .nav-links { display: flex; gap: 8px; }
+        .nav-link-btn {
+            background: transparent; border: 1px solid transparent; padding: 10px 15px; 
+            border-radius: 14px; color: var(--text-main); text-decoration: none; 
+            font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;
+        }
+        .nav-link-btn.active { background: var(--card-bg); color: var(--accent); border-color: var(--border-color); }
+
+        /* Container & Grid */
+        .search-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .search-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .add-teacher-btn { background: var(--accent); color: white; border: none; padding: 12px 25px; border-radius: 15px; font-weight: 800; cursor: pointer; display: none; }
+
+        .teachers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .teacher-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 25px; padding: 30px; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+        .teacher-img { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 3px solid var(--accent); }
+
+        /* Buttons & Inputs */
+        .btn-main { width: 100%; padding: 14px; border-radius: 15px; border: none; background: var(--accent); color: white; font-weight: 800; cursor: pointer; }
+        .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(5px); }
+        .modal-content { background: #1e293b; padding: 35px; border-radius: 30px; width: 90%; max-width: 450px; border: 1px solid var(--border-color); }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid var(--border-color); background: #0f172a; color: white; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo"><img src="sunlight.png" alt="Logo"></div>
+        <div class="nav-links">
+            <a href="edu-main.html" class="nav-link-btn"><i class="fas fa-home"></i> <span>الرئيسية</span></a>
+            <a href="#" class="nav-link-btn active"><i class="fas fa-search"></i> <span>البحث</span></a>
+            <a href="groups.html" class="nav-link-btn"><i class="fas fa-users"></i> <span>المجموعات</span></a>
+        </div>
+    </nav>
+
+    <div class="search-container">
+        <div class="search-header">
+            <h1 style="font-weight: 900;">البحث عن مدرس</h1>
+            <button class="add-teacher-btn" id="addBtn" onclick="openModal()">+ إعلان حصة</button>
+        </div>
+        <div id="teachersGrid" class="teachers-grid"></div>
+    </div>
+
+    <!-- Modal لإضافة المادة -->
+    <div class="modal" id="teacherModal">
+        <div class="modal-content">
+            <h2 style="text-align: center; margin-bottom: 20px; color: var(--accent);">إعلان عن حصة</h2>
+            <input type="text" id="subjectInput" placeholder="المادة" readonly>
+            <input type="number" id="priceInput" placeholder="سعر الحصة">
+            <label style="font-size: 0.8rem; margin-bottom: 5px; display: block; text-align: right;">اختر صورتك الشخصية:</label>
+            <input type="file" id="photoFile" accept="image/*">
+            <button class="btn-main" id="submitBtn" onclick="saveToTeacherData()">نشر الآن</button>
+            <button class="btn-main" style="background:transparent; color:#ff4757; margin-top: 10px;" onclick="closeModal()">إلغاء</button>
+        </div>
+    </div>
+
+    <script>
+        const { Client, Account, Databases, Storage, ID, Query } = Appwrite;
+        const client = new Client().setEndpoint('https://cloud.appwrite.io/v1').setProject('6a00844400157b7e6917');
+        const account = new Account(client);
+        const databases = new Databases(client);
+        const storage = new Storage(client);
+
+        const DB_ID = "6a009dd400164dc7b0a8";
+        const USERS_COLL = "usersdata";
+        const TEACHER_COLL = "teacher_data";
+        const REQUESTS_COLL = "requests_data";
+        const BUCKET_ID = "6a04e3c5002b0499d09e"; // <--- ضع الـ Bucket ID الخاص بك هنا
+
+        let myData = null;
+
+        async function init() {
+            try {
+                const user = await account.get();
+                const res = await databases.listDocuments(DB_ID, USERS_COLL, [Query.equal('email', user.email)]);
+                if(res.documents.length > 0) {
+                    myData = res.documents[0];
+                    if(myData.role === 'teacher' || myData.role === 'مدرس') {
+                        document.getElementById('addBtn').style.display = 'block';
+                        document.getElementById('subjectInput').value = myData.specialization || "";
+                    }
+                    loadTeachers();
+                }
+            } catch (e) { window.location.href = 'login.html'; }
+        }
+
+        async function saveToTeacherData() {
+            const price = document.getElementById('priceInput').value;
+            const fileInput = document.getElementById('photoFile');
+            const btn = document.getElementById('submitBtn');
+
+            if(!price || fileInput.files.length === 0) return alert("املأ البيانات واختر صورة من فضلك");
+
+            btn.innerText = "جاري الرفع...";
+            btn.disabled = true;
+
+            try {
+                // 1. رفع الصورة لـ Storage
+                const uploaded = await storage.createFile(BUCKET_ID, ID.unique(), fileInput.files[0]);
+                const photoUrl = storage.getFileView(BUCKET_ID, uploaded.$id).href;
+
+                // 2. حفظ البيانات في Database
+                await databases.createDocument(DB_ID, TEACHER_COLL, ID.unique(), {
+                    teacherId: myData.$id,
+                    name: myData.name,
+                    subject: myData.specialization,
+                    price: parseInt(price),
+                    photo: photoUrl
+                });
+
+                alert("تم نشر الإعلان بنجاح!");
+                closeModal();
+                loadTeachers();
+            } catch (e) {
+                alert("خطأ: تأكد من الصلاحيات و Bucket ID في Appwrite");
+                console.error(e);
+            } finally {
+                btn.innerText = "نشر الآن";
+                btn.disabled = false;
+            }
+        }
+
+        async function loadTeachers() {
+            const grid = document.getElementById('teachersGrid');
+            grid.innerHTML = "<p style='grid-column:1/-1; text-align:center;'>جاري تحميل المدرسين...</p>";
+            try {
+                const res = await databases.listDocuments(DB_ID, TEACHER_COLL);
+                grid.innerHTML = "";
+                res.documents.forEach(t => {
+                    grid.innerHTML += `
+                        <div class="teacher-card">
+                            <img src="${t.photo}" class="teacher-img" onerror="this.src='user.png'">
+                            <h3>${t.name}</h3>
+                            <p style="color:var(--accent); font-weight:700;">${t.subject}</p>
+                            <p style="margin: 10px 0;">${t.price} ج.م / حصة</p>
+                            <button class="btn-main" onclick="sendJoinRequest('${t.teacherId}')">طلب انضمام</button>
+                        </div>`;
+                });
+            } catch (e) { grid.innerHTML = "خطأ في تحميل البيانات."; }
+        }
+
+        async function sendJoinRequest(teacherId) {
+            if(!myData) return;
+            if(myData.role === 'teacher' || myData.role === 'مدرس') return alert("المدرسين لا يمكنهم طلب انضمام.");
+
+            
+try {
+                await databases.createDocument(DB_ID, REQUESTS_COLL, ID.unique(), {
+                    teacherId: teacherId,
+                    studentId: myData.$id,
+                    studentName: myData.name,
+                    status: 'pending',
+                    timestamp: new Date().toISOString()
+                });
+                alert("تم إرسال طلب الانضمام بنجاح!");
+            } catch (e) {
+                alert("فشل الإرسال: تأكد من صلاحيات جدول requests_data");
+            }
+        }
+
+        function openModal() { document.getElementById('teacherModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('teacherModal').style.display = 'none'; }
+        window.onload = init;
+    </script>
+</body>
+</html>

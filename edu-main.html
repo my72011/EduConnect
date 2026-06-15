@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduConnect | البث المباشر</title>
+    
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- JS Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src='https://meet.jit.si/external_api.js'></script>
+
+    <style>
+        :root {
+            --bg-color: #f0f4f8; 
+            --text-main: #1a202c; 
+            --text-muted: #4a5568; 
+            --accent: #006684; 
+            --nav-bg: rgba(255, 255, 255, 0.98); 
+            --card-bg: rgba(255, 255, 255, 0.95); 
+            --border-color: rgba(0, 0, 0, 0.08);
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        body.dark-mode {
+            --bg-color: #030712; 
+            --text-main: #f8fafc; 
+            --text-muted: #94a3b8;
+            --accent: #c5a367; 
+            --nav-bg: rgba(3, 7, 18, 0.98);
+            --card-bg: rgba(30, 41, 59, 0.95); 
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: background 0.3s, color 0.3s; }
+        body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+        
+        #network-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: 0.4; }
+
+        /* Navigation */
+        nav {
+            position: fixed; top: 0; width: 100%; height: 75px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 5%; background: var(--nav-bg); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color); z-index: 1000;
+        }
+        .logo img { height: 45px; object-fit: contain; }
+        .nav-links { display: flex; gap: 8px; }
+        .nav-link-btn {
+            background: transparent; border: 1px solid transparent;
+            padding: 10px 15px; border-radius: 14px; color: var(--text-main);
+            text-decoration: none; font-weight: 700; font-size: 0.9rem;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .nav-link-btn:hover, .nav-link-btn.active { background: var(--card-bg); border-color: var(--border-color); color: var(--accent); }
+
+        /* Main Content Area */
+        .wrapper { max-width: 600px; margin: 0 auto; padding: 150px 20px 60px; text-align: center; }
+        .premium-card {
+            background: var(--card-bg); border: 1px solid var(--border-color); 
+            border-radius: 30px; padding: 40px; box-shadow: var(--shadow);
+            backdrop-filter: blur(15px);
+        }
+
+        .icon-box {
+            width: 80px; height: 80px; background: rgba(0, 102, 132, 0.1);
+            color: var(--accent); border-radius: 20px; display: flex;
+            align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 25px;
+        }
+        body.dark-mode .icon-box { background: rgba(197, 163, 103, 0.1); }
+
+        .main-btn {
+            width: 100%; padding: 16px; border-radius: 18px; border: none;
+            background: var(--accent); color: white; font-weight: 800; font-size: 1.1rem;
+            cursor: pointer; margin-top: 25px; display: flex; justify-content: center; align-items: center; gap: 12px;
+        }
+
+        /* Modals */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            display: none; align-items: center; justify-content: center; z-index: 2100; backdrop-filter: blur(5px);
+        }
+        .modal-content { background: var(--card-bg); width: 90%; max-width: 450px; padding: 30px; border-radius: 25px; border: 1px solid var(--border-color); }
+        
+        #jitsi-view { position: fixed; inset: 0; z-index: 3000; display: none; background: #000; }
+        
+        @media (max-width: 600px) { .nav-link-btn span { display: none; } }
+    </style>
+</head>
+<body class="dark-mode"> <!-- الافتراضي دارك مود زي مشروعك -->
+
+    <canvas id="network-canvas"></canvas>
+    <div id="jitsi-view"></div>
+
+    <nav>
+        <div class="logo"><img id="main-logo" src="sunlight.png" alt="Logo"></div>
+        <div class="nav-links">
+            <a href="#" class="nav-link-btn active"><i class="fas fa-home"></i> <span>الرئيسية</span></a>
+            <a href="edu notifications.html" class="nav-link-btn"><i class="fas fa-users"></i> <span>المجموعات</span></a>
+            <a href="edu settings.html" class="nav-link-btn"><i class="fas fa-cog"></i> <span>الإعدادات</span></a>
+        </div>
+    </nav>
+
+    <div class="wrapper">
+        <div class="premium-card" id="main-card">
+            <div class="icon-box"><i class="fas fa-video"></i></div>
+            <h1 id="welcome-msg" style="font-weight: 900; margin-bottom: 10px;">EduConnect</h1>
+            <p id="status-text" style="color: var(--text-muted); font-weight: 600;">جاري مزامنة بياناتك...</p>
+            <div id="action-area"></div>
+        </div>
+    </div>
+
+    <!-- Modal للطالب -->
+    <div id="studentModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 10px; font-weight: 900; color: var(--accent);">انضمام للحصة</h3>
+            <input type="text" id="roomInput" style="width:100%; padding:15px; border-radius:10px; margin:10px 0;" placeholder="أدخل اسم الغرفة">
+            <button class="main-btn" onclick="joinRoom()">دخول</button>
+            <button class="main-btn" onclick="closeModals()" style="background: transparent; color: #e74c3c;">إلغاء</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Appwrite Config (من صورك) ---
+        const { Client, Account, Databases, Query } = Appwrite;
+        const client = new Client()
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('6a00844400157b7e6917');
+
+        const account = new Account(client);
+        const databases = new Databases(client);
+
+        const DATABASE_ID = '6a009dd400164dc7b0a8';
+        const TABLE_ID = 'usersdata';
+
+        let userSession = null;
+
+        // دالة البدء الذكية
+        async function init() {
+            try {
+                // 1. هات بيانات الجلسة أولاً
+                userSession = await account.get();
+                console.log("Session ID:", userSession.$id);
+
+                // 2. ابحث في جدول usersdata عن السجل اللي فيه نفس الإيميل
+                const response = await databases.listDocuments(
+                    DATABASE_ID,
+                    TABLE_ID,
+                    [Query.equal('email', userSession.email)]
+                );
+
+                if (response.documents.length > 0) {
+                    renderDashboard(response.documents[0]);
+                } else {
+                    // محاولة أخيرة بالـ ID لو الإيميل مش موجود
+                    try {
+                        const docById = await databases.getDocument(DATABASE_ID, TABLE_ID, userSession.$id);
+                        renderDashboard(docById);
+                    } catch (e) {
+                        showError("بياناتك غير موجودة في جدول usersdata. تأكد من إضافة حسابك يدوياً أو برمجياً.");
+                    }
+                }
+            } catch (err) {
+                console.error("Auth Error:", err);
+                window.location.href = 'login.html';
+            }
+        }
+
+        function renderDashboard(userData) {
+            // فحص الرتبة (role)
+            const isTeacher = userData.role === 'teacher' || userData.role === 'مدرس';
+            
+            document.getElementById('welcome-msg').innerText = `مرحباً، ${userData.name}`;
+            document.getElementById('status-text').innerText = isTeacher ? 
+                "جاهز لبدء حصة جديدة؟" : "أهلاً بك، هل لديك حصة الآن؟";
+            
+            const area = document.getElementById('action-area');
+            if (isTeacher) {
+                area.innerHTML = `<button class="main-btn" onclick="startTeacherLive()"><i class="fas fa-plus-circle"></i> إنشاء غرفة بث</button>`;
+            } else {
+                area.innerHTML = `<button class="main-btn" onclick="openStudentModal()"><i class="fas fa-sign-in-alt"></i> انضمام لحصة</button>`;
+            }
+            gsap.from("#action-area button", { opacity: 0, scale: 0.9, duration: 0.5 });
+        }
+
+        function showError(msg) {
+            document.getElementById('status-text').innerText = msg;
+            document.getElementById('status-text').style.color = "#ff4757";
+        }
+
+        // وظائف البث
+        function startTeacherLive() {
+            const roomName = "EduConnect_" + Math.random().toString(36).substring(7);
+            startJitsi(roomName);
+        }
+
+        function openStudentModal() { document.getElementById('studentModal').style.display = 'flex'; }
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+        
+        function joinRoom() {
+            const room = document.getElementById('roomInput').value.trim();
+            if(room) startJitsi(room);
+        }
+
+        function startJitsi(roomID) {
+            closeModals();
+            document.getElementById('jitsi-view').style.display = 'block';
+            const api = new JitsiMeetExternalAPI("meet.jit.si", {
+                roomName: roomID,
+                parentNode: document.getElementById('jitsi-view'),
+                userInfo: { displayName: userSession.name }
+            });
+            api.addEventListener('videoConferenceLeft', () => location.reload());
+        }
+
+        // --- Background Animation ---
+        const canvas = document.getElementById('network-canvas');
+        const ctx = canvas.getContext('2d');
+        let w, h, particles = [];
+        const resize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+        window.onresize = resize; resize();
+        class P { constructor(){this.x=Math.random()*w;this.y=Math.random()*h;this.vx=(Math.random()-0.5)*0.5;this.vy=(Math.random()-0.5)*0.5;} update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>w)this.vx*=-1;if(this.y<0||this.y>h)this.vy*=-1;} }
+        for(let i=0;i<80;i++)particles.push(new P());
+        function anim(){
+            ctx.clearRect(0,0,w,h); ctx.strokeStyle = "#c5a367"; ctx.lineWidth = 0.5;
+            particles.forEach((p,i)=>{
+                p.update();
+                for(let j=i+1;j<particles.length;j++){
+                    let d = Math.hypot(p.x-particles[j].x, p.y-particles[j].y);
+                    if(d<120){ ctx.globalAlpha=1-(d/120); ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(particles[j].x,particles[j].y); ctx.stroke(); }
+                }
+            });
+            requestAnimationFrame(anim);
+        }
+
+        window.onload = () => { anim(); init(); };
+    </script>
+</body>
+</html>

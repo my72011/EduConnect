@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>EduConnect | تسجيل الدخول</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;500;800;900&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+<style>
+
+:root{
+    --bg-color:#f8fafc;
+    --text-main:#0f172a;
+    --text-muted:#64748b;
+    --accent:#006684;
+    --nav-glass:rgba(255,255,255,0.7);
+    --card-glass:rgba(255,255,255,0.8);
+    --border-glass:rgba(0,0,0,0.1);
+    --canvas-dots:rgba(0,102,132,0.2);
+    --canvas-lines:rgba(0,102,132,0.1);
+}
+
+body.dark-mode{
+    --bg-color:#050b14;
+    --text-main:#f8fafc;
+    --text-muted:#94a3b8;
+    --accent:#c5a367;
+    --nav-glass:rgba(5,11,20,0.8);
+    --card-glass:rgba(255,255,255,0.03);
+    --border-glass:rgba(255,255,255,0.05);
+    --canvas-dots:rgba(197,163,103,0.3);
+    --canvas-lines:rgba(197,163,103,0.15);
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Cairo',sans-serif;
+}
+
+body{
+    background:var(--bg-color);
+    color:var(--text-main);
+    height:100vh;
+    overflow:hidden;
+    transition:0.4s;
+}
+
+#network-canvas{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    z-index:0;
+}
+
+nav{
+    position:fixed;
+    top:0;
+    width:100%;
+    padding:15px 5vw;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--nav-glass);
+    backdrop-filter:blur(15px);
+    border-bottom:1px solid var(--border-glass);
+    z-index:100;
+}
+
+.logo img{
+    height:55px;
+}
+
+.nav-controls{
+    display:flex;
+    gap:12px;
+}
+
+.nav-btn{
+    background:var(--card-glass);
+    border:1px solid var(--border-glass);
+    color:var(--text-main);
+    padding:10px 18px;
+    border-radius:14px;
+    cursor:pointer;
+    font-weight:700;
+    transition:0.3s;
+}
+
+.nav-btn:hover{
+    transform:translateY(-2px);
+}
+
+.auth-container{
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    position:relative;
+    z-index:5;
+    padding:20px;
+}
+
+.auth-card{
+    width:100%;
+    max-width:450px;
+    background:var(--card-glass);
+    backdrop-filter:blur(25px);
+    border:1px solid var(--border-glass);
+    border-radius:35px;
+    padding:40px;
+    box-shadow:0 20px 40px rgba(0,0,0,0.08);
+}
+
+.header{
+    text-align:center;
+    margin-bottom:25px;
+}
+
+.header h1{
+    font-size:2.2rem;
+    font-weight:900;
+    margin-bottom:10px;
+}
+
+.header p{
+    color:var(--text-muted);
+}
+
+.input-group{
+    position:relative;
+    margin-bottom:20px;
+}
+
+.input-group i{
+    position:absolute;
+    right:15px;
+    top:50%;
+    transform:translateY(-50%);
+    color:var(--accent);
+}
+
+body.en .input-group i{
+    right:auto;
+    left:15px;
+}
+
+input{
+    width:100%;
+    padding:14px 45px 14px 15px;
+    border:none;
+    outline:none;
+    border-radius:15px;
+    background:rgba(0,0,0,0.04);
+    border:1px solid var(--border-glass);
+    color:var(--text-main);
+    font-size:1rem;
+}
+
+body.dark-mode input{
+    background:rgba(255,255,255,0.05);
+}
+
+body.en input{
+    padding:14px 15px 14px 45px;
+}
+
+.submit-btn{
+    width:100%;
+    border:none;
+    border-radius:15px;
+    padding:15px;
+    background:var(--accent);
+    color:white;
+    font-weight:800;
+    cursor:pointer;
+    font-size:1rem;
+    transition:0.3s;
+}
+
+.submit-btn:hover{
+    transform:translateY(-3px);
+    filter:brightness(1.1);
+}
+
+.footer-text{
+    margin-top:20px;
+    text-align:center;
+    color:var(--text-muted);
+}
+
+.footer-text a{
+    color:var(--accent);
+    text-decoration:none;
+    font-weight:800;
+}
+
+body.en{
+    direction:ltr;
+}
+
+</style>
+</head>
+
+<body>
+
+<canvas id="network-canvas"></canvas>
+
+<nav>
+
+    <div class="logo">
+        <img id="main-logo" src="sunlight.png">
+    </div>
+
+    <div class="nav-controls">
+
+        <button class="nav-btn" id="lang-toggle">
+            English
+        </button>
+
+        <button class="nav-btn" id="theme-toggle">
+            <i class="fas fa-moon"></i>
+        </button>
+
+    </div>
+
+</nav>
+
+<div class="auth-container">
+
+    <div class="auth-card" id="loginCard">
+
+        <div class="header">
+
+            <h1
+            data-ar="مرحباً بعودتك"
+            data-en="Welcome Back">
+
+            مرحباً بعودتك
+
+            </h1>
+
+            <p
+            data-ar="سجل دخولك للمتابعة"
+            data-en="Login to continue">
+
+            سجل دخولك للمتابعة
+
+            </p>
+
+        </div>
+
+        <form id="loginForm">
+
+            <div class="input-group">
+
+                <i class="fas fa-envelope"></i>
+
+                <input
+                type="email"
+                id="email"
+                required
+                placeholder="البريد الإلكتروني"
+                data-placeholder-ar="البريد الإلكتروني"
+                data-placeholder-en="Email Address">
+
+            </div>
+
+            <div class="input-group">
+
+                <i class="fas fa-lock"></i>
+
+                <input
+                type="password"
+                id="password"
+                required
+                placeholder="كلمة المرور"
+                data-placeholder-ar="كلمة المرور"
+                data-placeholder-en="Password">
+
+            </div>
+
+            <button
+            type="submit"
+            class="submit-btn"
+            id="loginBtn"
+            data-ar="دخول"
+            data-en="Login">
+
+            دخول
+
+            </button>
+
+        </form>
+
+        <p class="footer-text">
+
+            <span
+            data-ar="ليس لديك حساب؟"
+            data-en="Don't have an account?">
+
+            ليس لديك حساب؟
+
+            </span>
+
+            <a
+            href="educonnect(try1).html"
+            data-ar="ابدأ الآن"
+            data-en="Get Started">
+
+            ابدأ الآن
+
+            </a>
+
+        </p>
+
+    </div>
+
+</div>
+
+<script>
+
+// =================== Appwrite ===================
+
+const { Client, Account } = Appwrite;
+
+const client = new Client()
+.setEndpoint('https://cloud.appwrite.io/v1')
+.setProject('6a00844400157b7e6917');
+
+const account = new Account(client);
+
+// =================== Language ===================
+
+const langBtn =
+document.getElementById('lang-toggle');
+
+let currentLang = 'ar';
+
+langBtn.onclick = () => {
+
+    currentLang =
+    currentLang === 'ar'
+    ? 'en'
+    : 'ar';
+
+    document.body.classList.toggle(
+        'en',
+        currentLang === 'en'
+    );
+
+    langBtn.innerText =
+    currentLang === 'ar'
+    ? 'English'
+    : 'العربية';
+
+    document
+    .querySelectorAll('[data-ar]')
+    .forEach(el => {
+
+        el.innerText =
+        el.getAttribute(
+            `data-${currentLang}`
+        );
+    });
+
+    document
+    .querySelectorAll('input')
+    .forEach(input => {
+
+        const placeholder =
+        input.getAttribute(
+            `data-placeholder-${currentLang}`
+        );
+
+        if(placeholder){
+            input.placeholder = placeholder;
+        }
+    });
+};
+
+// =================== Theme ===================
+
+const themeBtn =
+document.getElementById('theme-toggle');
+
+themeBtn.onclick = () => {
+
+    document.body.classList.toggle(
+        'dark-mode'
+    );
+
+    const isDark =
+    document.body.classList.contains(
+        'dark-mode'
+    );
+
+    document.getElementById(
+        'main-logo'
+    ).src =
+    isDark
+    ? 'dark.png'
+    : 'sunlight.png';
+
+    themeBtn.innerHTML =
+    isDark
+    ? '<i class="fas fa-sun"></i>'
+    : '<i class="fas fa-moon"></i>';
+};
+
+
+// --- تسجيل الدخول ---
+document.getElementById('loginForm').onsubmit = async (e) => {
+
+    e.preventDefault();
+
+    const btn = document.getElementById('loginBtn');
+
+    btn.disabled = true;
+
+    btn.innerText =
+        currentLang === 'ar'
+            ? 'جاري الدخول...'
+            : 'Logging in...';
+
+    const email =
+        document.getElementById('email').value;
+
+    const password =
+        document.getElementById('password').value;
+
+    try {
+
+        // حذف أي Session قديمة
+        try {
+            await account.deleteSession('current');
+        } catch(err) {}
+
+        // إنشاء Session جديدة
+        await account.createEmailSession(
+            email,
+            password
+        );
+
+        localStorage.setItem(
+            'userEmail',
+            email
+        );
+
+        alert(
+            currentLang === 'ar'
+                ? 'تم تسجيل الدخول بنجاح!'
+                : 'Login successful!'
+        );
+
+        window.location.href = 'edu notifications.html';
+
+    } catch (err) {
+
+        alert(err.message);
+
+    } finally {
+
+        btn.disabled = false;
+
+        btn.innerText =
+            currentLang === 'ar'
+                ? 'دخول'
+                : 'Login';
+    }
+};
+
+// =================== Animation ===================
+
+gsap.to("#loginCard",{
+    opacity:1,
+    y:0,
+    duration:1
+});
+
+// =================== Canvas ===================
+
+const canvas =
+document.getElementById(
+'network-canvas'
+);
+
+const ctx =
+canvas.getContext('2d');
+
+let w,h,pts=[];
+
+const resize = () => {
+
+    w = canvas.width =
+    window.innerWidth;
+
+    h = canvas.height =
+    window.innerHeight;
+};
+
+window.onresize = resize;
+
+resize();
+
+class Point{
+
+    constructor(){
+
+        this.x = Math.random()*w;
+        this.y = Math.random()*h;
+
+        this.vx = Math.random()-0.5;
+        this.vy = Math.random()-0.5;
+    }
+
+    update(){
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if(this.x<0 || this.x>w)
+        this.vx *= -1;
+
+        if(this.y<0 || this.y>h)
+        this.vy *= -1;
+    }
+
+    draw(){
+
+        ctx.beginPath();
+
+        ctx.arc(
+            this.x,
+            this.y,
+            1.5,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fillStyle =
+        getComputedStyle(document.body)
+        .getPropertyValue(
+            '--canvas-dots'
+        );
+
+        ctx.fill();
+    }
+}
+
+for(let i=0;i<60;i++){
+    pts.push(new Point());
+}
+
+function animate(){
+
+    ctx.clearRect(0,0,w,h);
+
+    pts.forEach((p,i)=>{
+
+        p.update();
+        p.draw();
+
+        for(let j=i;j<pts.length;j++){
+
+            const d = Math.hypot(
+                p.x-pts[j].x,
+                p.y-pts[j].y
+            );
+
+            if(d<130){
+
+                ctx.strokeStyle =
+                getComputedStyle(document.body)
+                .getPropertyValue(
+                    '--canvas-lines'
+                );
+
+                ctx.lineWidth = 0.5;
+
+                ctx.beginPath();
+
+                ctx.moveTo(
+                    p.x,
+                    p.y
+                );
+
+                ctx.lineTo(
+                    pts[j].x,
+                    pts[j].y
+                );
+
+                ctx.stroke();
+            }
+        }
+    });
+
+    requestAnimationFrame(
+        animate
+    );
+}
+
+animate();
+
+</script>
+
+</body>
+</html>

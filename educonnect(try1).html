@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduConnect | Sign Up</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.0"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #f8fafc; --text-main: #0f172a; --accent: #006684;
+            --glass: rgba(255, 255, 255, 0.85); --border: rgba(0, 0, 0, 0.1);
+            --canvas-dots: rgba(0, 102, 132, 0.15); --canvas-lines: rgba(0, 102, 132, 0.08);
+        }
+        body.dark-mode {
+            --bg-color: #050b14; --text-main: #f8fafc; --accent: #c5a367;
+            --glass: rgba(15, 23, 42, 0.85); --border: rgba(255, 255, 255, 0.1);
+            --canvas-dots: rgba(197, 163, 103, 0.2); --canvas-lines: rgba(197, 163, 103, 0.1);
+        }
+        body.en { direction: ltr; text-align: left; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s ease; }
+        body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+        #network-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+
+        nav { padding: 10px 5%; display: flex; justify-content: space-between; align-items: center; background: var(--glass); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000; }
+        .logo img { height: 60px; object-fit: contain; }
+        .nav-controls { display: flex; gap: 10px; }
+        .control-btn { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 8px 15px; border-radius: 12px; cursor: pointer; font-weight: 700; }
+
+        .signup-container { width: 90%; max-width: 650px; background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--border); border-radius: 35px; padding: 35px; margin: 30px auto; box-shadow: 0 25px 50px rgba(0,0,0,0.15); }
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h2 { font-size: 1.8rem; font-weight: 900; color: var(--accent); }
+
+        .user-type-selector { display: flex; background: rgba(0,0,0,0.05); border-radius: 18px; padding: 6px; margin-bottom: 25px; }
+        .user-type-selector label { flex: 1; text-align: center; padding: 12px; cursor: pointer; border-radius: 14px; font-weight: 700; }
+        .user-type-selector input { display: none; }
+        .user-type-selector input:checked + label { background: var(--accent); color: white; box-shadow: 0 4px 15px rgba(0,102,132,0.2); }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 700; font-size: 0.9rem; }
+        .form-group input, .form-group select { width: 100%; padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,0.6); color: var(--text-main); outline: none; }
+        .form-group input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,102,132,0.1); }
+        
+        .row { display: flex; gap: 20px; flex-wrap: wrap; }
+        .row .form-group { flex: 1; min-width: 240px; }
+        
+        .btn-submit { width: 100%; padding: 16px; border-radius: 15px; border: none; background: var(--accent); color: white; font-size: 1.1rem; font-weight: 800; cursor: pointer; margin-top: 15px; box-shadow: 0 10px 20px rgba(0,102,132,0.2); }
+        .btn-submit:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        
+        .login-link { text-align: center; margin-top: 20px; font-size: 0.95rem; }
+        .login-link a { color: var(--accent); text-decoration: none; font-weight: 900; margin-right: 5px; }
+        .login-link a:hover { text-decoration: underline; }
+
+        .hidden { display: none; }
+        .terms-area { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 0.9rem; }
+        .terms-area a { color: var(--accent); text-decoration: none; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <canvas id="network-canvas"></canvas>
+
+    <nav>
+        <div class="logo"><img id="main-logo" src="2.png" alt="EduConnect Logo"></div>
+        <div class="nav-controls">
+            <button class="control-btn" id="lang-toggle">English</button>
+            <button class="control-btn" id="theme-toggle"><i class="fas fa-moon"></i></button>
+        </div>
+    </nav>
+
+    <div class="signup-container">
+        <div class="header">
+            <h2 data-ar="إنشاء حساب EduConnect" data-en="Join EduConnect">إنشاء حساب EduConnect</h2>
+        </div>
+
+        <div class="user-type-selector">
+            <input type="radio" id="student" name="role" value="student" checked>
+            <label for="student" data-ar="طالب" data-en="Student"><i class="fas fa-user-graduate"></i> طالب</label>
+            <input type="radio" id="teacher" name="role" value="teacher">
+            <label for="teacher" data-ar="مدرس" data-en="Teacher"><i class="fas fa-chalkboard-teacher"></i> مدرس</label>
+        </div>
+
+        <form id="signupForm">
+            <div class="form-group">
+                <label data-ar="الاسم بالكامل" data-en="Full Name">الاسم بالكامل</label>
+                <input type="text" id="username" required placeholder="Mostafa Yasser">
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label data-ar="البريد الإلكتروني" data-en="Email Address">البريد الإلكتروني</label>
+                    <input type="email" id="email" required placeholder="name@example.com">
+                </div>
+                <div class="form-group">
+                    <label data-ar="رقم الهاتف" data-en="Phone Number">رقم الهاتف</label>
+                    <input type="tel" id="phone" required placeholder="01xxxxxxxxx">
+                </div>
+            </div>
+
+            <div class="form-group" id="grade-field">
+                <label data-ar="السنة الدراسية" data-en="Academic Grade">السنة الدراسية</label>
+                <select id="grade">
+                    <option>الثاني الابتدائي</option><option>الثالث الابتدائي</option><option>الرابع الابتدائي</option>
+                    <option>الخامس الابتدائي</option><option>السادس الابتدائي</option><option>الأول الإعدادي</option>
+                    <option>الثاني الإعدادي</option><option>الثالث الإعدادي</option><option>الأول الثانوي</option>
+                    <option>الثاني الثانوي</option><option>الثالث الثانوي</option>
+                </select>
+            </div>
+
+            <div class="form-group hidden" id="subject-field">
+                <label data-ar="المادة التي تدرسها" data-en="Teaching Subject">المادة التي تدرسها</label>
+                <select id="subject">
+                    <option>اللغة العربية</option><option>اللغة الإنجليزية</option><option>اللغة الفرنسية</option>
+                    <option>اللغة الألمانية</option><option>الرياضيات</option><option>العلوم</option>
+                    <option>الفيزياء</option><option>الكيمياء</option><option>الأحياء</option>
+                    <option>التاريخ</option><option>الجغرافيا</option>
+                </select>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label data-ar="كلمة السر" data-en="Password">كلمة السر</label>
+                    <input type="password" id="password" required minlength="8">
+                </div>
+                <div class="form-group">
+                    <label data-ar="تأكيد كلمة السر" data-en="Confirm Password">تأكيد كلمة السر</label>
+                    <input type="password" id="confirm-password" required>
+                </div>
+            </div>
+
+            <div class="terms-area">
+                <input type="checkbox" id="terms" required>
+                <label for="terms">
+                    <span data-ar="أوافق على" data-en="I agree to">أوافق على</span> 
+                    <a href="terms.html" target="_blank" data-ar="الشروط والأحكام" data-en="Terms & Conditions">الشروط والأحكام</a>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn" data-ar="تسجيل الحساب" data-en="Register Now">تسجيل الحساب</button>
+            
+            <div class="login-link">
+                <span data-ar="لديك حساب بالفعل؟" data-en="Already have an account?">لديك حساب بالفعل؟</span>
+                <a href="educonnect login.html" data-ar="تسجيل الدخول" data-en="Log In">تسجيل الدخول</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // --- إعدادات Appwrite ---
+        const { Client, Account, Databases, ID } = Appwrite;
+        const client = new Client()
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('6a00844400157b7e6917'); 
+
+        const account = new Account(client);
+        const databases = new Databases(client);
+
+        const DATABASE_ID = '6a009dd400164dc7b0a8'; 
+        const TABLE_ID = 'usersdata'; 
+
+        // --- تبديل اللغة ---
+        const langBtn = document.getElementById('lang-toggle');
+        let currentLang = 'ar';
+        langBtn.onclick = () => {
+            currentLang = currentLang === 'ar' ? 'en' : 'ar';
+            document.body.className = currentLang === 'en' ? 'en' : '';
+            langBtn.innerText = currentLang === 'ar' ? 'English' : 'العربية';
+            document.querySelectorAll('[data-ar]').forEach(el => el.innerText = el.getAttribute(`data-${currentLang}`));
+        };
+
+        // --- تبديل الثيم ---
+        const themeBtn = document.getElementById('theme-toggle');
+        themeBtn.onclick = () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            document.getElementById('main-logo').src = isDark ? 'dark.png' : 'sunlight.png';
+            themeBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        };
+
+        // --- تبديل الطالب والمدرس ---
+        const studentRadio = document.getElementById('student');
+        const teacherRadio = document.getElementById('teacher');
+        const gradeField = document.getElementById('grade-field');
+        const subjectField = document.getElementById('subject-field');
+
+        [studentRadio, teacherRadio].forEach(r => r.onchange = () => {
+            gradeField.classList.toggle('hidden', teacherRadio.checked);
+            subjectField.classList.toggle('hidden', studentRadio.checked);
+        });
+
+        // --- عملية التسجيل ---
+        document.getElementById('signupForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = currentLang === 'ar' ? 'جاري التحميل...' : 'Loading...';
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const name = document.getElementById('username').value;
+            const phone = document.getElementById('phone').value;
+            const role = document.querySelector('input[name="role"]:checked').value;
+            const specialization = role === 'student' ? document.getElementById('grade').value : document.getElementById('subject').value;
+
+            if(password !== document.getElementById('confirm-password').value) {
+                alert("Passwords do not match!");
+                btn.disabled = false;
+                return;
+            }
+
+            try {
+                const user = await account.create(ID.unique(), email, password, name);
+                await databases.createDocument(DATABASE_ID, TABLE_ID, ID.unique(), {
+                    name, email, phone, role, specialization
+                });
+                localStorage.setItem('userEmail', email);
+                alert(currentLang === 'ar' ? 'تم التسجيل بنجاح!' : 'Success!');
+                window.location.href = 'mm.html'; 
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = currentLang === 'ar' ? 'تسجيل الحساب' : 'Register Now';
+            }
+        };
+
+        // --- خلفية الشبكة ---
+        const canvas = document.getElementById('network-canvas');
+        const ctx = canvas.getContext('2d');
+        let w, h, pts = [];
+        const res = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+        window.onresize = res; res();
+        class Pt {
+            constructor() { this.x = Math.random()*w; this.y = Math.random()*h; this.vx = Math.random()-0.5; this.vy = Math.random()-0.5; }
+            up() { this.x+=this.vx; this.y+=this.vy; if(this.x<0||this.x>w)this.vx*=-1; if(this.y<0||this.y>h)this.vy*=-1; }
+            dr() { ctx.beginPath(); ctx.arc(this.x,this.y,1.5,0,Math.PI*2); ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--canvas-dots'); ctx.fill(); }
+        }
+        for(let i=0; i<60; i++) pts.push(new Pt());
+        const loop = () => {
+            ctx.clearRect(0,0,w,h);
+            pts.forEach((p,i) => {
+                p.up(); p.dr();
+                for(let j=i; j<pts.length; j++) {
+                    let d = Math.hypot(p.x-pts[j].x, p.y-pts[j].y);
+                    if(d<130) {
+                        ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--canvas-lines');
+                        ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke();
+                    }
+                }
+            });
+            requestAnimationFrame(loop);
+        };
+        loop();
+    </script>
+</body>
+</html>

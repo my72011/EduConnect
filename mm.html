@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduConnect | التحقق من الحساب</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;500;800;900&display=swap" rel="stylesheet">
+    
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+    <style>
+        /* --- المتغيرات الأساسية (نفس كود الـ Welcome Page) --- */
+        :root {
+            --bg-color: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #006684;
+            --nav-glass: rgba(255, 255, 255, 0.7);
+            --card-glass: rgba(255, 255, 255, 0.4);
+            --border-glass: rgba(0, 0, 0, 0.05);
+            --canvas-dots: rgba(0, 102, 132, 0.2);
+            --canvas-lines: rgba(0, 102, 132, 0.1);
+        }
+
+        body.dark-mode {
+            --bg-color: #050b14;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #c5a367;
+            --nav-glass: rgba(5, 11, 20, 0.7);
+            --card-glass: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.05);
+            --canvas-dots: rgba(197, 163, 103, 0.3);
+            --canvas-lines: rgba(197, 163, 103, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            transition: background-color 0.8s ease;
+        }
+
+        #network-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: -1; pointer-events: none;
+        }
+
+        nav {
+            position: fixed; top: 0; width: 100%;
+            padding: 20px 5vw;
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--nav-glass);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--border-glass);
+            z-index: 100;
+        }
+
+        .logo img { height: 60px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+
+        .theme-btn {
+            background: transparent; border: none; cursor: pointer;
+            font-size: 1.5rem; color: var(--text-main);
+            transition: transform 0.3s ease;
+        }
+
+        /* --- Verification Section --- */
+        .hero {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 100px 20px;
+        }
+
+        .verify-card {
+            background: var(--card-glass);
+            backdrop-filter: blur(25px);
+            border: 1px solid var(--border-glass);
+            border-radius: 40px;
+            padding: 60px 40px;
+            max-width: 550px;
+            width: 100%;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .hero-title { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; margin-bottom: 15px; }
+        .word-wrap { display: inline-block; overflow: hidden; vertical-align: bottom; }
+        .word { display: inline-block; transform: translateY(100%); }
+        .highlight { background: linear-gradient(45deg, var(--accent), #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .hero-desc { color: var(--text-muted); margin-bottom: 40px; line-height: 1.6; }
+        #user-email { color: var(--accent); font-weight: 800; text-decoration: underline; }
+
+        /* --- OTP Inputs --- */
+        .otp-container {
+            display: flex; gap: 12px; justify-content: center;
+            direction: ltr; margin-bottom: 40px;
+        }
+
+        .otp-input {
+            width: 55px; height: 65px;
+            background: var(--card-glass);
+            border: 2px solid var(--border-glass);
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--text-main);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .otp-input:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 20px rgba(0, 102, 132, 0.2);
+            transform: translateY(-5px);
+        }
+
+        /* --- Magnetic Button --- */
+        .magnetic-wrap { display: inline-block; cursor: pointer; width: 100%; }
+        .btn {
+            position: relative; width: 100%;
+            padding: 18px; font-size: 1.2rem; font-weight: 800;
+            border-radius: 50px; border: none;
+            background: var(--text-main); color: var(--bg-color);
+            overflow: hidden; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+        }
+        .btn::before {
+            content: ''; position: absolute; top: 100%; left: 0; width: 100%; height: 100%;
+            background: var(--accent); transition: top 0.4s cubic-bezier(0.7, 0, 0.2, 1);
+            z-index: 0; border-radius: 50% 50% 0 0;
+        }
+        .btn:hover::before { top: 0; border-radius: 0; }
+        .btn span, .btn i { position: relative; z-index: 1; transition: color 0.3s; }
+        .btn:hover span, .btn:hover i { color: #fff; }
+
+        .resend-text { margin-top: 25px; color: var(--text-muted); font-size: 0.95rem; }
+        .resend-link { color: var(--accent); cursor: pointer; font-weight: 700; text-decoration: none; }
+
+    </style>
+</head>
+<body class="dark-mode">
+
+    <canvas id="network-canvas"></canvas>
+
+    <nav>
+        <div class="logo">
+            <img id="main-logo" src="dark.png" alt="EduConnect Logo">
+        </div>
+        <button class="theme-btn" id="theme-toggle">
+            <i class="fas fa-sun"></i>
+        </button>
+    </nav>
+
+    <main class="hero">
+        <div class="verify-card" id="card">
+            <h1 class="hero-title">
+                <span class="word-wrap"><span class="word">تأكيد</span></span> 
+                <span class="word-wrap"><span class="word highlight">الحساب</span></span>
+            </h1>
+            
+            <p class="hero-desc">
+                أرسلنا رمز التحقق المكون من 6 أرقام إلى بريدك: <br>
+                <span id="user-email">loading...</span>
+            </p>
+
+            <div class="otp-container">
+                <input type="text" maxlength="1" class="otp-input">
+                <input type="text" maxlength="1" class="otp-input">
+                <input type="text" maxlength="1" class="otp-input">
+                <input type="text" maxlength="1" class="otp-input">
+                <input type="text" maxlength="1" class="otp-input">
+                <input type="text" maxlength="1" class="otp-input">
+            </div>
+
+            <div class="magnetic-wrap">
+                <button class="btn magnetic-btn" onclick="verifyOTP()">
+                    <span>تأكيد الرمز</span>
+                    <i class="fas fa-shield-check"></i>
+                </button>
+            </div>
+
+            <p class="resend-text">لم يصلك الكود؟ <span class="resend-link" onclick="sendEmail()">إعادة الإرسال</span></p>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <script>
+        // --- 1. EmailJS & OTP Logic ---
+        let generatedOTP = "";
+        const emailFromStorage = localStorage.getItem('userEmail') || "mostafa@example.com";
+        document.getElementById('user-email').innerText = emailFromStorage;
+
+        (function() {
+            emailjs.init("ZpNJdw8ihxFfLBWUb"); // استبدل بـ Public Key بتاعك
+        })();
+
+        function sendEmail() {
+            generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+            console.log("OTP:", generatedOTP); // للتجربة فقط
+
+            const templateParams = {
+                to_email: emailFromStorage,
+                otp_code: generatedOTP
+            };
+
+            emailjs.send('service_2e8mxo8', 'template_wez6hyk', templateParams)
+                .then(() => alert("تم إرسال الكود لبريدك!"))
+                .catch((err) => console.error("EmailJS Error:", err));
+        }
+
+        window.onload = sendEmail;
+
+        function verifyOTP() {
+
+    const inputs = document.querySelectorAll('.otp-input');
+
+    let enteredOTP = "";
+
+    inputs.forEach(input => {
+        enteredOTP += input.value;
+    });
+
+    if (enteredOTP === generatedOTP) {
+
+        // رسالة نجاح
+        alert("تم التحقق بنجاح!");
+
+        // حذف الكود
+        sessionStorage.removeItem("currentOTP");
+
+        // تأخير بسيط
+        setTimeout(() => {
+
+            window.location.href = "edu-main.html";
+
+        }, 500);
+
+    } else {
+
+        alert("الرمز غير صحيح!");
+
+        inputs.forEach(input => {
+            input.value = "";
+        });
+
+        inputs[0].focus();
+    }
+}
+
+        // --- 2. OTP Input Focus Logic ---
+        const inputs = document.querySelectorAll('.otp-input');
+        inputs.forEach((input, i) => {
+            input.addEventListener('input', () => { if(input.value && i < 5) inputs[i+1].focus(); });
+            input.addEventListener('keydown', (e) => { if(e.key === "Backspace" && !input.value && i > 0) inputs[i-1].focus(); });
+        });
+
+        // --- 3. Magnetic Button (نفس كودك) ---
+        const magneticWrap = document.querySelector('.magnetic-wrap');
+        const btn = document.querySelector('.magnetic-btn');
+        magneticWrap.addEventListener('mousemove', (e) => {
+            const rect = magneticWrap.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width/2;
+            const y = e.clientY - rect.top - rect.height/2;
+            gsap.to(btn, { x: x * 0.3, y: y * 0.3, duration: 0.3 });
+        });
+        magneticWrap.addEventListener('mouseleave', () => gsap.to(btn, { x: 0, y: 0, duration: 0.7, ease: "elastic.out" }));
+
+        // --- 4. Dark/Light Mode ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        const logo = document.getElementById('main-logo');
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            logo.src = isDark ? 'dark.png' : 'sunlight.png';
+            themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        });
+
+        // --- 5. GSAP Intro Animations ---
+        const tl = gsap.timeline();
+        tl.to('.word', { y: 0, duration: 1, stagger: 0.2, ease: "power4.out" })
+          .to('.verify-card', { opacity: 1, y: 0, duration: 1, ease: "power3.out" }, "-=0.5");
+
+        // --- 6. Network Canvas (نفس كودك بالظبط) ---
+        const canvas = document.getElementById('network-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles = [];
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width; this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 1.2; this.vy = (Math.random() - 0.5) * 1.2;
+                this.radius = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if(this.x < 0 || this.x > width) this.vx *= -1;
+                if(this.y < 0 || this.y > height) this.vy *= -1;
+            }
+        }
+        for(let i=0; i<60; i++) particles.push(new Particle());
+
+        function animate() {
+            ctx.clearRect(0,0,width,height);
+            const root = getComputedStyle(document.body);
+            const dotCol = root.getPropertyValue('--canvas-dots').trim();
+            const lineCol = root.getPropertyValue('--canvas-lines').trim();
+            
+            particles.forEach((p, i) => {
+                p.update();
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+                ctx.fillStyle = dotCol; ctx.fill();
+                for(let j=i; j<particles.length; j++) {
+                    const d = Math.hypot(p.x-particles[j].x, p.y-particles[j].y);
+                    if(d<120) {
+                        ctx.beginPath(); ctx.strokeStyle = lineCol;
+                        ctx.moveTo(p.x, p.y); ctx.lineTo(particles[j].x, particles[j].y); ctx.stroke();
+                    }
+                }
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>
