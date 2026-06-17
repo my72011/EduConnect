@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     
     <!-- JS Dependencies -->
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src='https://meet.jit.si/external_api.js'></script>
 
@@ -127,50 +126,49 @@
         </div>
     </div>
 
-    <script>
-        // --- Appwrite Config (من صورك) ---
-        const { Client, Account, Databases, Query } = Appwrite;
-        const client = new Client()
-            .setEndpoint('https://cloud.appwrite.io/v1')
-            .setProject('6a00844400157b7e6917');
-
-        const account = new Account(client);
-        const databases = new Databases(client);
-
-        const DATABASE_ID = '6a009dd400164dc7b0a8';
-        const TABLE_ID = 'usersdata';
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         let userSession = null;
 
         // دالة البدء الذكية
         async function init() {
-            try {
-                // 1. هات بيانات الجلسة أولاً
-                userSession = await account.get();
-                console.log("Session ID:", userSession.$id);
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    // Fallback data in case Firestore fetch fails
+                    const fallbackData = {
+                        name: user.displayName || user.email.split('@')[0],
+                        email: user.email,
+                        role: 'student',
+                        specialization: ''
+                    };
 
-                // 2. ابحث في جدول usersdata عن السجل اللي فيه نفس الإيميل
-                const response = await databases.listDocuments(
-                    DATABASE_ID,
-                    TABLE_ID,
-                    [Query.equal('email', userSession.email)]
-                );
-
-                if (response.documents.length > 0) {
-                    renderDashboard(response.documents[0]);
-                } else {
-                    // محاولة أخيرة بالـ ID لو الإيميل مش موجود
                     try {
-                        const docById = await databases.getDocument(DATABASE_ID, TABLE_ID, userSession.$id);
-                        renderDashboard(docById);
+                        const docRef = doc(db, "users", user.uid);
+                        const docSnap = await getDoc(docRef);
+
+                        if (docSnap.exists()) {
+                            const userData = docSnap.data();
+                            userSession = { name: userData.name, email: user.email };
+                            renderDashboard(userData);
+                        } else {
+                            // No Firestore doc — use fallback
+                            console.warn("No Firestore document found for UID:", user.uid, "— using fallback data.");
+                            userSession = { name: fallbackData.name, email: user.email };
+                            renderDashboard(fallbackData);
+                        }
                     } catch (e) {
-                        showError("بياناتك غير موجودة في جدول usersdata. تأكد من إضافة حسابك يدوياً أو برمجياً.");
+                        // Firestore error (permissions, network, etc.) — use fallback
+                        console.error("Firestore Error:", e);
+                        userSession = { name: fallbackData.name, email: user.email };
+                        renderDashboard(fallbackData);
                     }
+                } else {
+                    window.location.href = 'login.html';
                 }
-            } catch (err) {
-                console.error("Auth Error:", err);
-                window.location.href = 'login.html';
-            }
+            });
         }
 
         function renderDashboard(userData) {
@@ -203,6 +201,12 @@
 
         function openStudentModal() { document.getElementById('studentModal').style.display = 'flex'; }
         function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+        
+        // Expose functions to global scope for onclick handlers
+        window.startTeacherLive = startTeacherLive;
+        window.openStudentModal = openStudentModal;
+        window.closeModals = closeModals;
+        window.joinRoom = joinRoom;
         
         function joinRoom() {
             const room = document.getElementById('roomInput').value.trim();

@@ -10,7 +10,6 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;500;800;900&display=swap" rel="stylesheet">
 
-<script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
@@ -329,17 +328,9 @@ body.en{
 
 </div>
 
-<script>
-
-// =================== Appwrite ===================
-
-const { Client, Account } = Appwrite;
-
-const client = new Client()
-.setEndpoint('https://cloud.appwrite.io/v1')
-.setProject('6a00844400157b7e6917');
-
-const account = new Account(client);
+<script type="module">
+import { auth } from './firebase-config.js';
+import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 // =================== Language ===================
 
@@ -442,16 +433,8 @@ document.getElementById('loginForm').onsubmit = async (e) => {
 
     try {
 
-        // حذف أي Session قديمة
-        try {
-            await account.deleteSession('current');
-        } catch(err) {}
-
-        // إنشاء Session جديدة
-        await account.createEmailSession(
-            email,
-            password
-        );
+        // Firebase Auth: Login
+        await signInWithEmailAndPassword(auth, email, password);
 
         localStorage.setItem(
             'userEmail',

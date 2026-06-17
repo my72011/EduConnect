@@ -8,8 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     
-    <!-- Appwrite & GSAP -->
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
+    <!-- JS Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
     <style>
@@ -220,22 +219,26 @@
         </div>
     </div>
 
-    <script>
-        // --- Appwrite Configuration ---
-        const { Client, Account } = Appwrite;
-        const client = new Client()
-            .setEndpoint('https://cloud.appwrite.io/v1')
-            .setProject('67616616002570be0b26');
-        const account = new Account(client);
+    <script type="module">
+        import { auth } from './firebase-config.js';
+        import { updatePassword as updateFirebasePassword, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         // --- Core Functions ---
         async function updatePassword() {
             const oldP = document.getElementById('oldPass').value;
             const newP = document.getElementById('newPass').value;
             if(!oldP || !newP) return alert("من فضلك أدخل كلمات المرور");
+            
+            const user = auth.currentUser;
+            if (!user) return alert("يرجى تسجيل الدخول أولاً");
+
             try {
-                await account.updatePassword(newP, oldP);
+                const credential = EmailAuthProvider.credential(user.email, oldP);
+                await reauthenticateWithCredential(user, credential);
+                await updateFirebasePassword(user, newP);
                 alert("تم تحديث كلمة المرور بنجاح ✅");
+                document.getElementById('oldPass').value = '';
+                document.getElementById('newPass').value = '';
             } catch (err) { alert("خطأ: " + err.message); }
         }
 
@@ -260,10 +263,16 @@
 
         async function logout() {
             try {
-                await account.deleteSession('current');
+                await signOut(auth);
                 window.location.href = 'login.html';
             } catch (e) { window.location.href = 'login.html'; }
         }
+
+        // Expose functions to global scope
+        window.updatePassword = updatePassword;
+        window.setTheme = setTheme;
+        window.setLang = setLang;
+        window.logout = logout;
 
         // --- Startup & Canvas ---
         window.onload = () => {

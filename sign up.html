@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EduConnect | Sign Up</title>
     
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.0"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;500;700;900&display=swap" rel="stylesheet">
     
@@ -148,18 +148,10 @@
         </form>
     </div>
 
-    <script>
-        // --- إعدادات Appwrite ---
-        const { Client, Account, Databases, ID } = Appwrite;
-        const client = new Client()
-            .setEndpoint('https://cloud.appwrite.io/v1')
-            .setProject('6a00844400157b7e6917'); 
-
-        const account = new Account(client);
-        const databases = new Databases(client);
-
-        const DATABASE_ID = '6a009dd400164dc7b0a8'; 
-        const TABLE_ID = 'usersdata'; 
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         // --- تبديل اللغة ---
         const langBtn = document.getElementById('lang-toggle');
@@ -212,10 +204,19 @@
             }
 
             try {
-                const user = await account.create(ID.unique(), email, password, name);
-                await databases.createDocument(DATABASE_ID, TABLE_ID, ID.unique(), {
-                    name, email, phone, role, specialization
+                // Firebase Auth: Create User
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Firebase Firestore: Save custom user data
+                await setDoc(doc(db, "users", user.uid), {
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    role: role,
+                    specialization: specialization
                 });
+
                 localStorage.setItem('userEmail', email);
                 alert(currentLang === 'ar' ? 'تم التسجيل بنجاح!' : 'Success!');
                 window.location.href = 'mm.html'; 
